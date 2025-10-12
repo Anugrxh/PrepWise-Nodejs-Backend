@@ -53,16 +53,35 @@ router.post(
       });
     }
 
-    // Check if result already exists
-    const existingResult = await FinalResult.findOne({ interviewId, userId });
-    if (existingResult) {
-      return res.status(400).json({
-        success: false,
-        message: "Final result already exists for this interview",
-      });
-    }
-
     try {
+      // Check if result already exists and return it if found
+      const existingResult = await FinalResult.findOne({ interviewId, userId })
+        .populate([
+          {
+            path: "interviewId",
+            select: "techStack hardnessLevel experienceLevel numberOfQuestions",
+          },
+          { path: "userId", select: "name email" },
+        ]);
+
+      if (existingResult) {
+        // Get facial analysis summary for existing result
+        const answers = await Answer.getInterviewAnswers(interviewId, userId);
+        const facialAnalysisResults = answers
+          .map((answer) => answer.facialAnalysis)
+          .filter((analysis) => analysis && analysis.overallScore > 0);
+        const facialAnalysisSummary = aggregateFacialAnalysis(facialAnalysisResults);
+
+        return res.status(200).json({
+          success: true,
+          message: "Final result already exists for this interview",
+          data: {
+            result: existingResult,
+            facialAnalysisSummary,
+          },
+        });
+      }
+
       // Get all answers for the interview
       const answers = await Answer.getInterviewAnswers(interviewId, userId);
 
@@ -96,25 +115,31 @@ router.post(
       const questionsAnswered = answers.length;
       const totalQuestions = interview.numberOfQuestions;
 
-      // Create final result
-      const finalResult = await FinalResult.create({
-        interviewId,
-        userId,
-        overallScore: aiResult.overallScore,
-        categoryScores: aiResult.categoryScores,
-        strengths: aiResult.strengths,
-        weaknesses: aiResult.weaknesses,
-        recommendations: aiResult.recommendations,
-        detailedFeedback: aiResult.detailedFeedback,
-        completionTime,
-        questionsAnswered,
-        totalQuestions,
-        metadata: {
-          aiModel: "gemini-2.0-flash-001",
-          facialAnalysisModel: "django-facial-analysis",
-          processingTime,
+      // Use findOneAndUpdate with upsert to handle race conditions
+      const finalResult = await FinalResult.findOneAndUpdate(
+        { interviewId, userId },
+        {
+          overallScore: aiResult.overallScore,
+          categoryScores: aiResult.categoryScores,
+          strengths: aiResult.strengths,
+          weaknesses: aiResult.weaknesses,
+          recommendations: aiResult.recommendations,
+          detailedFeedback: aiResult.detailedFeedback,
+          completionTime,
+          questionsAnswered,
+          totalQuestions,
+          metadata: {
+            aiModel: "gemini-2.0-flash-001",
+            facialAnalysisModel: "django-facial-analysis",
+            processingTime,
+          },
         },
-      });
+        {
+          new: true,
+          upsert: true,
+          runValidators: true,
+        }
+      );
 
       await finalResult.populate([
         {
@@ -134,6 +159,41 @@ router.post(
       });
     } catch (error) {
       console.error("Error generating final result:", error);
+      
+      // Handle duplicate key error specifically
+      if (error.code === 11000) {
+        // If duplicate key error occurs, try to fetch the existing result
+        try {
+          const existingResult = await FinalResult.findOne({ interviewId, userId })
+            .populate([
+              {
+                path: "interviewId",
+                select: "techStack hardnessLevel experienceLevel numberOfQuestions",
+              },
+              { path: "userId", select: "name email" },
+            ]);
+
+          if (existingResult) {
+            const answers = await Answer.getInterviewAnswers(interviewId, userId);
+            const facialAnalysisResults = answers
+              .map((answer) => answer.facialAnalysis)
+              .filter((analysis) => analysis && analysis.overallScore > 0);
+            const facialAnalysisSummary = aggregateFacialAnalysis(facialAnalysisResults);
+
+            return res.status(200).json({
+              success: true,
+              message: "Final result already exists for this interview",
+              data: {
+                result: existingResult,
+                facialAnalysisSummary,
+              },
+            });
+          }
+        } catch (fetchError) {
+          console.error("Error fetching existing result:", fetchError);
+        }
+      }
+
       return res.status(500).json({
         success: false,
         message: "Failed to generate final result. Please try again.",
