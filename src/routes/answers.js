@@ -746,8 +746,6 @@ router.get(
   })
 );
 
-export default router;
-
 // @desc    Submit all answers with facial analysis result
 // @route   POST /api/answers/submit-all
 // @access  Private
@@ -910,3 +908,5 @@ router.post(
     }
   })
 );
+
+export default router;

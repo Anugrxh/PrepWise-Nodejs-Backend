@@ -6,6 +6,7 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
+import mongoose from "mongoose"; // Import Mongoose for graceful shutdown
 
 // Import database connection
 import { connectDB } from "./config/database.js";
@@ -42,7 +43,7 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Middleware
+// --- Middleware ---
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -50,16 +51,34 @@ app.use(
 );
 app.use(compression());
 app.use(morgan("combined"));
-app.use(limiter);
 
-// ✅ CORS configuration — allow ALL origins (supports cookies too)
+// ✅ **FIXED ORDER**: CORS configuration now runs BEFORE the rate limiter.
+// This ensures that even error responses from the limiter have CORS headers.
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://your-production-frontend.com', // Replace with your actual frontend URL
+];
+
 app.use(
   cors({
-    origin: true, // Reflects the request origin automatically
+    origin: (origin, callback) => {
+      // For development, allow requests with no origin (e.g., Postman, mobile apps)
+      if (!origin && process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        return callback(new Error(msg), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
     optionsSuccessStatus: 200,
   })
 );
+
+// The rate limiter now runs AFTER CORS.
+app.use(limiter);
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
@@ -88,23 +107,29 @@ app.use("/api/results", resultRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  console.log("SIGTERM received. Shutting down gracefully...");
-  process.exit(0);
-});
-
-process.on("SIGINT", () => {
-  console.log("SIGINT received. Shutting down gracefully...");
-  process.exit(0);
-});
-
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Prepwise Backend running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`📚 API Documentation: http://localhost:${PORT}/api`);
 });
+
+
+// ✅ **IMPROVED**: A true graceful shutdown
+const gracefulShutdown = () => {
+    console.log("Shutdown signal received. Closing HTTP server...");
+    server.close(() => {
+        console.log("HTTP server closed.");
+        // Close the MongoDB connection
+        mongoose.connection.close(false, () => {
+            console.log("MongoDB connection closed. Exiting process.");
+            process.exit(0);
+        });
+    });
+};
+
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);
+
 
 export default app;
