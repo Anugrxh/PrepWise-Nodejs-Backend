@@ -2,10 +2,25 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import asyncHandler from "express-async-handler";
 
+// Utility function to parse duration strings
+const parseDuration = (duration) => {
+  if (!duration) return "7d";
+  
+  // If it's already a number (seconds), convert to string format
+  if (!isNaN(duration)) {
+    const days = Math.floor(parseInt(duration) / (24 * 60 * 60));
+    return days > 0 ? `${days}d` : "7d";
+  }
+  
+  // Return as-is if it's already in string format
+  return duration;
+};
+
 // Generate JWT token
 export const generateToken = (userId) => {
+  const duration = parseDuration(process.env.SESSION_DURATION);
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: process.env.SESSION_DURATION || "7d",
+    expiresIn: duration,
   });
 };
 
@@ -177,8 +192,35 @@ export const checkResourceOwnership = (
 
 // Set token cookie
 export const setTokenCookie = (res, token) => {
+  // Parse SESSION_DURATION to get expiration time in milliseconds
+  const getExpirationTime = () => {
+    const sessionDuration = process.env.SESSION_DURATION || "7d";
+    
+    // If it's a number (seconds), convert to milliseconds
+    if (!isNaN(sessionDuration)) {
+      return parseInt(sessionDuration) * 1000;
+    }
+    
+    // Parse string format like "7d", "24h", "60m"
+    const match = sessionDuration.match(/^(\d+)([dhm])$/);
+    if (match) {
+      const value = parseInt(match[1]);
+      const unit = match[2];
+      
+      switch (unit) {
+        case 'd': return value * 24 * 60 * 60 * 1000; // days to milliseconds
+        case 'h': return value * 60 * 60 * 1000; // hours to milliseconds
+        case 'm': return value * 60 * 1000; // minutes to milliseconds
+        default: return 7 * 24 * 60 * 60 * 1000; // default 7 days
+      }
+    }
+    
+    // Default fallback
+    return 7 * 24 * 60 * 60 * 1000; // 7 days
+  };
+
   const cookieOptions = {
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+    expires: new Date(Date.now() + getExpirationTime()),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

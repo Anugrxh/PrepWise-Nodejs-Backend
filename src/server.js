@@ -6,10 +6,12 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
-import mongoose from "mongoose"; // Import Mongoose for graceful shutdown
+
 
 // Import database connection
 import { connectDB } from "./config/database.js";
+import User from "./models/User.js";
+import mongoose from "mongoose";
 
 // Import routes
 import authRoutes from "./routes/auth.js";
@@ -55,19 +57,20 @@ app.use(morgan("combined"));
 // ✅ **FIXED ORDER**: CORS configuration now runs BEFORE the rate limiter.
 // This ensures that even error responses from the limiter have CORS headers.
 const allowedOrigins = [
-  'http://localhost:3000',
-  'https://your-production-frontend.com', // Replace with your actual frontend URL
+  "http://localhost:3000",
+  "https://your-production-frontend.com", // Replace with your actual frontend URL
 ];
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // For development, allow requests with no origin (e.g., Postman, mobile apps)
-      if (!origin && process.env.NODE_ENV !== 'production') {
+      if (!origin && process.env.NODE_ENV !== "production") {
         return callback(null, true);
       }
       if (allowedOrigins.indexOf(origin) === -1) {
-        const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+        const msg =
+          "The CORS policy for this site does not allow access from the specified Origin.";
         return callback(new Error(msg), false);
       }
       return callback(null, true);
@@ -107,29 +110,55 @@ app.use("/api/results", resultRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
+// Cleanup expired refresh tokens periodically (every 24 hours)
+const startTokenCleanup = () => {
+  const cleanupInterval = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+  setInterval(async () => {
+    try {
+      console.log("🧹 Starting scheduled refresh token cleanup...");
+      await User.cleanupAllExpiredTokens();
+    } catch (error) {
+      console.error("❌ Error during token cleanup:", error);
+    }
+  }, cleanupInterval);
+
+  // Run initial cleanup after 5 minutes of server start
+  setTimeout(async () => {
+    try {
+      console.log("🧹 Running initial refresh token cleanup...");
+      await User.cleanupAllExpiredTokens();
+    } catch (error) {
+      console.error("❌ Error during initial token cleanup:", error);
+    }
+  }, 5 * 60 * 1000); // 5 minutes
+};
+
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`🚀 Prepwise Backend running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-});
 
+  // Start token cleanup scheduler
+  startTokenCleanup();
+  console.log("🧹 Token cleanup scheduler started");
+});
 
 // ✅ **IMPROVED**: A true graceful shutdown
 const gracefulShutdown = () => {
-    console.log("Shutdown signal received. Closing HTTP server...");
-    server.close(() => {
-        console.log("HTTP server closed.");
-        // Close the MongoDB connection
-        mongoose.connection.close(false, () => {
-            console.log("MongoDB connection closed. Exiting process.");
-            process.exit(0);
-        });
+  console.log("Shutdown signal received. Closing HTTP server...");
+  server.close(() => {
+    console.log("HTTP server closed.");
+    // Close the MongoDB connection
+    mongoose.connection.close(false, () => {
+      console.log("MongoDB connection closed. Exiting process.");
+      process.exit(0);
     });
+  });
 };
 
 process.on("SIGTERM", gracefulShutdown);
 process.on("SIGINT", gracefulShutdown);
-
 
 export default app;

@@ -49,7 +49,7 @@ const userSchema = new mongoose.Schema(
         createdAt: {
           type: Date,
           default: Date.now,
-          expires: 604800, // 7 days
+          expires: 2592000, // 30 days (matches JWT refresh token expiration)
         },
       },
     ],
@@ -106,6 +106,44 @@ userSchema.statics.findByEmail = function (email) {
   return this.findOne({ email: email.toLowerCase() });
 };
 
+// Instance method to clean up expired refresh tokens
+userSchema.methods.cleanupExpiredTokens = async function () {
+  const now = new Date();
+  const initialCount = this.refreshTokens.length;
+  
+  // Remove tokens that are older than 30 days (manual cleanup for safety)
+  this.refreshTokens = this.refreshTokens.filter(tokenObj => {
+    const tokenAge = now - tokenObj.createdAt;
+    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+    return tokenAge < thirtyDaysInMs;
+  });
+  
+  // Save if any tokens were removed
+  if (this.refreshTokens.length !== initialCount) {
+    await this.save();
+    console.log(`Cleaned up ${initialCount - this.refreshTokens.length} expired tokens for user ${this._id}`);
+  }
+  
+  return this.refreshTokens.length;
+};
+
+// Instance method to add refresh token with automatic cleanup
+userSchema.methods.addRefreshToken = async function (token) {
+  // Clean up expired tokens first
+  await this.cleanupExpiredTokens();
+  
+  // Add new token
+  this.refreshTokens.push({ token });
+  
+  // Limit to maximum 5 active refresh tokens per user (security measure)
+  if (this.refreshTokens.length > 5) {
+    this.refreshTokens = this.refreshTokens.slice(-5); // Keep only the 5 most recent
+  }
+  
+  await this.save();
+  return this;
+};
+
 // Static method to get user stats
 userSchema.statics.getUserStats = async function () {
   const stats = await this.aggregate([
@@ -137,6 +175,24 @@ userSchema.statics.getUserStats = async function () {
   ]);
 
   return stats[0] || { totalUsers: 0, activeUsers: 0, recentUsers: 0 };
+};
+
+// Static method to cleanup expired tokens for all users (can be run as a cron job)
+userSchema.statics.cleanupAllExpiredTokens = async function () {
+  const users = await this.find({ 
+    refreshTokens: { $exists: true, $not: { $size: 0 } } 
+  });
+  
+  let totalCleaned = 0;
+  for (const user of users) {
+    const beforeCount = user.refreshTokens.length;
+    await user.cleanupExpiredTokens();
+    const afterCount = user.refreshTokens.length;
+    totalCleaned += (beforeCount - afterCount);
+  }
+  
+  console.log(`Global cleanup: Removed ${totalCleaned} expired refresh tokens from ${users.length} users`);
+  return totalCleaned;
 };
 
 const User = mongoose.model("User", userSchema);

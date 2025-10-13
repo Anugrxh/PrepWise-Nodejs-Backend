@@ -50,9 +50,8 @@ router.post(
     const token = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
-    // Save refresh token to user
-    user.refreshTokens.push({ token: refreshToken });
-    await user.save();
+    // Save refresh token to user with automatic cleanup
+    await user.addRefreshToken(refreshToken);
 
     // Set token cookie
     setTokenCookie(res, token);
@@ -117,9 +116,8 @@ router.post(
     const token = generateToken(user._id);
     const refreshToken = generateRefreshToken(user._id);
 
-    // Save refresh token to user
-    user.refreshTokens.push({ token: refreshToken });
-    await user.save();
+    // Save refresh token to user with automatic cleanup
+    await user.addRefreshToken(refreshToken);
 
     // Set token cookie
     setTokenCookie(res, token);
@@ -218,12 +216,11 @@ router.post(
       const newToken = generateToken(user._id);
       const newRefreshToken = generateRefreshToken(user._id);
 
-      // Remove old refresh token and add new one
+      // Remove old refresh token and add new one with cleanup
       user.refreshTokens = user.refreshTokens.filter(
         (t) => t.token !== refreshToken
       );
-      user.refreshTokens.push({ token: newRefreshToken });
-      await user.save();
+      await user.addRefreshToken(newRefreshToken);
 
       // Set new token cookie
       setTokenCookie(res, newToken);
