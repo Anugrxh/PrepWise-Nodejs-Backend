@@ -115,19 +115,39 @@ router.post(
       const questionsAnswered = answers.length;
       const totalQuestions = interview.numberOfQuestions;
 
+      // Ensure overallScore is a number and calculate grade and passed status manually
+      const overallScore = Number(aiResult.overallScore);
+      let grade = "F";
+      if (overallScore >= 95) grade = "A+";
+      else if (overallScore >= 90) grade = "A";
+      else if (overallScore >= 85) grade = "B+";
+      else if (overallScore >= 80) grade = "B";
+      else if (overallScore >= 75) grade = "C+";
+      else if (overallScore >= 70) grade = "C";
+      else if (overallScore >= 60) grade = "D";
+
+      const passed = overallScore >= 70;
+      const completionPercentage = Math.round((questionsAnswered / totalQuestions) * 100);
+
+      // Debug logging
+      console.log(`Final Result Debug: overallScore=${overallScore}, passed=${passed}, grade=${grade}`);
+
       // Use findOneAndUpdate with upsert to handle race conditions
       const finalResult = await FinalResult.findOneAndUpdate(
         { interviewId, userId },
         {
-          overallScore: aiResult.overallScore,
+          overallScore,
           categoryScores: aiResult.categoryScores,
           strengths: aiResult.strengths,
           weaknesses: aiResult.weaknesses,
           recommendations: aiResult.recommendations,
           detailedFeedback: aiResult.detailedFeedback,
+          grade,
+          passed,
           completionTime,
           questionsAnswered,
           totalQuestions,
+          completionPercentage,
           metadata: {
             aiModel: "gemini-2.0-flash-001",
             facialAnalysisModel: "django-facial-analysis",

@@ -10,6 +10,7 @@ A comprehensive Node.js backend for the Prepwise AI-powered job interview prepar
 - **Answer Evaluation**: AI evaluates answers with detailed feedback and scoring
 - **Facial Analysis Integration**: Connects with Django facial analysis service for comprehensive evaluation
 - **Interview Management**: Complete interview lifecycle from generation to final results
+- **Grading System**: Comprehensive A+ to F grading with 70% pass threshold
 - **Performance Analytics**: Track user progress and improvement over time
 - **File Upload Support**: Profile image upload with multiple format support
 - **RESTful API**: Complete CRUD operations for all resources
@@ -98,6 +99,7 @@ npm start
 ### 6. View Results
 
 - Comprehensive feedback with scores, strengths, weaknesses, and recommendations
+- Grade assignment (A+ to F) and pass/fail status (70% threshold)
 - Performance analytics and comparison with previous interviews
 
 ## 📚 API Endpoints
@@ -263,6 +265,73 @@ npm start
 - Combines all answer evaluations and facial analysis
 - Provides comprehensive feedback with actionable recommendations
 - Calculates overall score and grade
+
+## 📊 Grading System & Pass Criteria
+
+### Grade Scale
+
+| **Grade** | **Score Range** | **Performance Level** | **Status** |
+|-----------|-----------------|----------------------|------------|
+| **A+** | 95-100% | Excellent | ✅ PASS |
+| **A** | 90-94% | Excellent | ✅ PASS |
+| **B+** | 85-89% | Very Good | ✅ PASS |
+| **B** | 80-84% | Very Good | ✅ PASS |
+| **C+** | 75-79% | Good | ✅ PASS |
+| **C** | 70-74% | Good | ✅ PASS |
+| **D** | 60-69% | Average | ❌ FAIL |
+| **F** | Below 60% | Poor | ❌ FAIL |
+
+### Pass/Fail Criteria
+
+- **PASS THRESHOLD**: Score ≥ 70% (Grade C or above)
+- **FAIL THRESHOLD**: Score < 70% (Grade D or F)
+
+### Performance Levels
+
+- **Excellent** (90%+): Outstanding performance with comprehensive understanding
+- **Very Good** (80-89%): Strong performance with minor areas for improvement
+- **Good** (70-79%): Satisfactory performance, meets minimum requirements
+- **Average** (60-69%): Below expectations, significant improvement needed
+- **Poor** (Below 60%): Major deficiencies, requires substantial preparation
+
+### API Response Example
+
+```json
+{
+  "success": true,
+  "data": {
+    "result": {
+      "overallScore": 78,
+      "grade": "C",
+      "passed": true,
+      "performanceLevel": "Good",
+      "categoryScores": {
+        "technicalKnowledge": 80,
+        "communication": 75,
+        "problemSolving": 82,
+        "confidence": 70,
+        "facialAnalysis": 73
+      }
+    }
+  }
+}
+```
+
+### Scoring Components
+
+The overall score is calculated based on:
+
+1. **AI Answer Evaluation** (70% weight)
+   - Relevance to question
+   - Completeness of answer
+   - Technical accuracy
+   - Communication clarity
+
+2. **Facial Analysis** (30% weight)
+   - Confidence level
+   - Eye contact maintenance
+   - Speech clarity
+   - Overall presentation
 
 ## 🖼️ Profile Image Management
 

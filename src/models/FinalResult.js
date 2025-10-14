@@ -131,28 +131,32 @@ finalResultSchema.index({ grade: 1 });
 
 // Virtual for performance level
 finalResultSchema.virtual("performanceLevel").get(function () {
-  if (this.overallScore >= 90) return "Excellent";
-  if (this.overallScore >= 80) return "Very Good";
-  if (this.overallScore >= 70) return "Good";
-  if (this.overallScore >= 60) return "Average";
-  if (this.overallScore >= 50) return "Below Average";
+  const overallScore = Number(this.overallScore);
+  if (overallScore >= 90) return "Excellent";
+  if (overallScore >= 80) return "Very Good";
+  if (overallScore >= 70) return "Good";
+  if (overallScore >= 60) return "Average";
+  if (overallScore >= 50) return "Below Average";
   return "Poor";
 });
 
 // Pre-save middleware to calculate grade and completion percentage
 finalResultSchema.pre("save", function (next) {
+  // Ensure overallScore is a number
+  const overallScore = Number(this.overallScore);
+  
   // Calculate grade based on overall score
-  if (this.overallScore >= 95) this.grade = "A+";
-  else if (this.overallScore >= 90) this.grade = "A";
-  else if (this.overallScore >= 85) this.grade = "B+";
-  else if (this.overallScore >= 80) this.grade = "B";
-  else if (this.overallScore >= 75) this.grade = "C+";
-  else if (this.overallScore >= 70) this.grade = "C";
-  else if (this.overallScore >= 60) this.grade = "D";
+  if (overallScore >= 95) this.grade = "A+";
+  else if (overallScore >= 90) this.grade = "A";
+  else if (overallScore >= 85) this.grade = "B+";
+  else if (overallScore >= 80) this.grade = "B";
+  else if (overallScore >= 75) this.grade = "C+";
+  else if (overallScore >= 70) this.grade = "C";
+  else if (overallScore >= 60) this.grade = "D";
   else this.grade = "F";
 
   // Determine if passed (70% or above)
-  this.passed = this.overallScore >= 70;
+  this.passed = overallScore >= 70;
 
   // Calculate completion percentage
   this.completionPercentage = Math.round(
