@@ -19,6 +19,7 @@ import interviewRoutes from "./routes/interviews.js";
 import answerRoutes from "./routes/answers.js";
 import resultRoutes from "./routes/results.js";
 import userRoutes from "./routes/users.js";
+import facialAnalysisRoutes from "./routes/facialAnalysis.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -105,6 +106,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/answers", answerRoutes);
 app.use("/api/results", resultRoutes);
+app.use("/api/facial-analysis", facialAnalysisRoutes);
 
 // Error handling middleware
 app.use(notFound);

@@ -909,4 +909,128 @@ router.post(
   })
 );
 
+// @desc    Add facial analysis to all answers in an interview
+// @route   PATCH /api/answers/interview/:interviewId/facial-analysis
+// @access  Private
+router.patch(
+  "/interview/:interviewId/facial-analysis",
+  authenticateUser,
+  [
+    param("interviewId").isMongoId().withMessage("Invalid interview ID"),
+    body("facialAnalysisResult")
+      .isObject()
+      .withMessage("Facial analysis result must be an object"),
+    body("facialAnalysisResult.confidence")
+      .optional()
+      .isFloat({ min: 0, max: 100 })
+      .withMessage("Confidence must be between 0 and 100"),
+    body("facialAnalysisResult.eyeContact")
+      .optional()
+      .isFloat({ min: 0, max: 100 })
+      .withMessage("Eye contact must be between 0 and 100"),
+    body("facialAnalysisResult.speechClarity")
+      .optional()
+      .isFloat({ min: 0, max: 100 })
+      .withMessage("Speech clarity must be between 0 and 100"),
+    body("facialAnalysisResult.overallScore")
+      .optional()
+      .isFloat({ min: 0, max: 100 })
+      .withMessage("Overall score must be between 0 and 100"),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { interviewId } = req.params;
+    const { facialAnalysisResult } = req.body;
+    const userId = req.user._id;
+
+    // Verify interview exists and belongs to user
+    const interview = await Interview.findOne({ _id: interviewId, userId });
+    if (!interview) {
+      return res.status(404).json({
+        success: false,
+        message: "Interview not found",
+      });
+    }
+
+    // Check if interview is completed (allow facial analysis update even after completion)
+    // This is useful for post-processing facial analysis
+
+    try {
+      // Get all answers for this interview
+      const answers = await Answer.find({ interviewId, userId });
+      
+      if (answers.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No answers found for this interview",
+        });
+      }
+
+      // Prepare facial analysis data
+      const facialAnalysisData = {
+        confidence: facialAnalysisResult.confidence || 0,
+        emotions: facialAnalysisResult.emotions || {},
+        eyeContact: facialAnalysisResult.eyeContact || 0,
+        speechClarity: facialAnalysisResult.speechClarity || 0,
+        overallScore: facialAnalysisResult.overallScore || 0,
+        feedback: facialAnalysisResult.feedback || "Facial analysis processed",
+        metadata: {
+          updatedAt: new Date().toISOString(),
+          source: "bulk_update",
+          processedAnswers: answers.length
+        }
+      };
+
+      // Update all answers with facial analysis
+      const updateResult = await Answer.updateMany(
+        { interviewId, userId },
+        { 
+          $set: { 
+            facialAnalysis: facialAnalysisData,
+            updatedAt: new Date()
+          } 
+        }
+      );
+
+      // Get updated answers for response
+      const updatedAnswers = await Answer.find({ interviewId, userId })
+        .sort({ questionNumber: 1 })
+        .populate("interviewId", "techStack hardnessLevel experienceLevel numberOfQuestions");
+
+      res.json({
+        success: true,
+        message: `Facial analysis added to ${updateResult.modifiedCount} answers successfully`,
+        data: {
+          updatedAnswers: updateResult.modifiedCount,
+          totalAnswers: answers.length,
+          facialAnalysisResult: facialAnalysisData,
+          answers: updatedAnswers.map(answer => ({
+            id: answer._id,
+            questionNumber: answer.questionNumber,
+            questionText: answer.questionText,
+            aiEvaluation: {
+              overallScore: answer.aiEvaluation?.overallScore || 0,
+              feedback: answer.aiEvaluation?.feedback || ""
+            },
+            facialAnalysis: {
+              overallScore: answer.facialAnalysis?.overallScore || 0,
+              confidence: answer.facialAnalysis?.confidence || 0,
+              eyeContact: answer.facialAnalysis?.eyeContact || 0,
+              speechClarity: answer.facialAnalysis?.speechClarity || 0
+            },
+            submittedAt: answer.submittedAt,
+            updatedAt: answer.updatedAt
+          }))
+        },
+      });
+    } catch (error) {
+      console.error("Error updating facial analysis for interview:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update facial analysis. Please try again.",
+      });
+    }
+  })
+);
+
 export default router;

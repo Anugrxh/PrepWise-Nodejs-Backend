@@ -9,6 +9,7 @@ A comprehensive Node.js backend for the Prepwise AI-powered job interview prepar
 - **AI-Powered Question Generation**: Google Gemini generates interview questions based on tech stack and experience level
 - **Answer Evaluation**: AI evaluates answers with detailed feedback and scoring
 - **Facial Analysis Integration**: Connects with Django facial analysis service for comprehensive evaluation
+- **Facial Analysis API**: Dedicated endpoints for confidence, emotion, and presentation analysis
 - **Interview Management**: Complete interview lifecycle from generation to final results
 - **Grading System**: Comprehensive A+ to F grading with 70% pass threshold
 - **Performance Analytics**: Track user progress and improvement over time
@@ -149,6 +150,14 @@ npm start
 | DELETE | `/api/results/:id`                    | Delete result             |
 | GET    | `/api/results/analytics/performance`  | Get performance analytics |
 | GET    | `/api/results/compare/:id1/:id2`      | Compare two results       |
+
+### Facial Analysis Endpoints
+
+| Method | Endpoint                                           | Description                        |
+| ------ | -------------------------------------------------- | ---------------------------------- |
+| GET    | `/api/facial-analysis/interview/:interviewId`      | Get facial analysis for interview  |
+| GET    | `/api/facial-analysis/user/summary`               | Get user's facial analysis summary |
+| GET    | `/api/facial-analysis/compare/:id1/:id2`           | Compare facial analysis results    |
 
 ### User Endpoints
 
@@ -1293,11 +1302,267 @@ Authorization: Bearer <token>
 | GET    | `/api/results/analytics/performance`  | Get performance analytics         | Yes           |
 | GET    | `/api/results/compare/:id1/:id2`      | Compare two results               | Yes           |
 
+### Facial Analysis & Insights
+
+| Method | Endpoint                                           | Description                        | Auth Required |
+| ------ | -------------------------------------------------- | ---------------------------------- | ------------- |
+| GET    | `/api/facial-analysis/interview/:interviewId`      | Get facial analysis for interview  | Yes           |
+| GET    | `/api/facial-analysis/user/summary`               | Get user's facial analysis summary | Yes           |
+| GET    | `/api/facial-analysis/compare/:id1/:id2`           | Compare facial analysis results    | Yes           |
+
 ### System Health
 
 | Method | Endpoint  | Description         | Auth Required |
 | ------ | --------- | ------------------- | ------------- |
 | GET    | `/health` | System health check | No            |
+
+## 🎭 Facial Analysis API Documentation
+
+### Get Interview Facial Analysis
+
+**GET** `/api/facial-analysis/interview/:interviewId`
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "interviewId": "64f8a1b2c3d4e5f6a7b8c9d1",
+    "interviewInfo": {
+      "techStack": ["React", "Node.js"],
+      "hardnessLevel": "Medium",
+      "experienceLevel": "Mid",
+      "totalQuestions": 5,
+      "analyzedQuestions": 5
+    },
+    "overallFacialAnalysis": {
+      "averageConfidence": 62,
+      "averageEyeContact": 38,
+      "averageSpeechClarity": 65,
+      "averageOverallScore": 55,
+      "averageEmotions": {
+        "angry": 10,
+        "disgust": 1,
+        "fear": 1,
+        "happy": 30,
+        "sad": 55,
+        "surprise": 3,
+        "neutral": 0
+      },
+      "dominantEmotion": "sad"
+    },
+    "questionBreakdown": [
+      {
+        "questionNumber": 1,
+        "questionText": "Explain React hooks and their benefits",
+        "answerDuration": 120,
+        "facialAnalysis": {
+          "confidence": 62,
+          "eyeContact": 38,
+          "speechClarity": 65,
+          "overallScore": 55,
+          "emotions": {
+            "angry": 10.2,
+            "disgust": 0.6,
+            "fear": 1.4,
+            "happy": 29.5,
+            "sad": 54.9,
+            "surprise": 3.1,
+            "neutral": 0.3
+          },
+          "feedback": "⚠️ DEVELOPING CANDIDATE: Shows potential but needs significant improvement"
+        },
+        "submittedAt": "2023-09-06T10:35:00.000Z"
+      }
+    ],
+    "timeline": [
+      {
+        "questionNumber": 1,
+        "timestamp": 1,
+        "confidence": 62,
+        "eyeContact": 38,
+        "speechClarity": 65,
+        "dominantEmotion": "sad"
+      }
+    ],
+    "insights": [
+      {
+        "type": "improvement",
+        "category": "confidence",
+        "message": "Good confidence with room for improvement in certain areas",
+        "score": 62
+      },
+      {
+        "type": "concern",
+        "category": "eyeContact",
+        "message": "Focus on maintaining better eye contact with the interviewer",
+        "score": 38
+      },
+      {
+        "type": "improvement",
+        "category": "speechClarity",
+        "message": "Generally clear speech with minor areas for improvement",
+        "score": 65
+      }
+    ],
+    "metadata": {
+      "totalAnswersAnalyzed": 5,
+      "analysisCompleteness": 100,
+      "generatedAt": "2023-09-06T11:00:00.000Z"
+    }
+  }
+}
+```
+
+### Get User Facial Analysis Summary
+
+**GET** `/api/facial-analysis/user/summary?limit=10`
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "overallStats": {
+      "totalInterviewsAnalyzed": 5,
+      "totalQuestionsAnalyzed": 25,
+      "overallAverageConfidence": 68,
+      "overallAverageScore": 62
+    },
+    "interviewSummaries": [
+      {
+        "interviewId": "64f8a1b2c3d4e5f6a7b8c9d1",
+        "interviewDate": "2023-09-06T10:00:00.000Z",
+        "techStack": ["React", "Node.js"],
+        "hardnessLevel": "Medium",
+        "questionsAnalyzed": 5,
+        "averageConfidence": 62,
+        "averageOverallScore": 55
+      }
+    ],
+    "metadata": {
+      "totalRecords": 25,
+      "limitApplied": 10,
+      "generatedAt": "2023-09-06T11:00:00.000Z"
+    }
+  }
+}
+```
+
+### Compare Facial Analysis Results
+
+**GET** `/api/facial-analysis/compare/:interviewId1/:interviewId2`
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "interview1": {
+      "id": "64f8a1b2c3d4e5f6a7b8c9d1",
+      "info": {
+        "techStack": ["React", "Node.js"],
+        "hardnessLevel": "Medium",
+        "createdAt": "2023-09-01T10:00:00.000Z"
+      },
+      "metrics": {
+        "averageConfidence": 55,
+        "averageEyeContact": 35,
+        "averageSpeechClarity": 60,
+        "averageOverallScore": 50
+      },
+      "questionsAnalyzed": 5
+    },
+    "interview2": {
+      "id": "64f8a1b2c3d4e5f6a7b8c9d2",
+      "info": {
+        "techStack": ["React", "TypeScript"],
+        "hardnessLevel": "Hard",
+        "createdAt": "2023-09-06T10:00:00.000Z"
+      },
+      "metrics": {
+        "averageConfidence": 70,
+        "averageEyeContact": 45,
+        "averageSpeechClarity": 75,
+        "averageOverallScore": 65
+      },
+      "questionsAnalyzed": 5
+    },
+    "comparison": {
+      "confidenceChange": 15,
+      "eyeContactChange": 10,
+      "speechClarityChange": 15,
+      "overallScoreChange": 15
+    },
+    "improvements": ["confidence", "eyeContact", "speechClarity", "overallScore"],
+    "declines": [],
+    "overallImprovement": true,
+    "timeDifference": 432000000
+  }
+}
+```
+
+### Facial Analysis Data Structure
+
+The facial analysis data is stored in the Answer model and includes:
+
+```javascript
+facialAnalysis: {
+  confidence: Number,        // 0-100 confidence level
+  emotions: {
+    angry: Number,          // Percentage of angry emotion
+    disgust: Number,        // Percentage of disgust emotion
+    fear: Number,           // Percentage of fear emotion
+    happy: Number,          // Percentage of happy emotion
+    sad: Number,            // Percentage of sad emotion
+    surprise: Number,       // Percentage of surprise emotion
+    neutral: Number         // Percentage of neutral emotion
+  },
+  eyeContact: Number,       // 0-100 eye contact score
+  speechClarity: Number,    // 0-100 speech clarity score
+  overallScore: Number,     // 0-100 overall facial analysis score
+  feedback: String          // Detailed feedback message
+}
+```
+
+### Insights Categories
+
+The API generates insights in the following categories:
+
+- **Confidence**: Analysis of confidence levels throughout the interview
+- **Eye Contact**: Assessment of eye contact maintenance
+- **Speech Clarity**: Evaluation of speech articulation and pace
+- **Emotions**: Analysis of emotional state and professional demeanor
+- **Trends**: Performance trends across questions (improving/declining)
+
+### Use Cases
+
+1. **Performance Dashboard**: Display confidence and emotion trends
+2. **Interview Coaching**: Provide specific feedback on presentation skills
+3. **Progress Tracking**: Compare facial analysis across multiple interviews
+4. **Behavioral Insights**: Understand emotional responses to different question types
+5. **Improvement Recommendations**: Generate actionable feedback for candidates
 
 ## 📊 Quick Start Examples
 
