@@ -497,7 +497,7 @@ PrepWise is an AI-powered interview preparation platform that combines Google Ge
 - User identifies areas for improvement
 - User tracks progress over time
 
-**Related Use Cases:** UC-6, UC-7
+**Related Use Cases:** UC-6
 
 ---
 

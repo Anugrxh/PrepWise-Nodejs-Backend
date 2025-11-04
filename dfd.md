@@ -313,7 +313,6 @@ Level 1 DFD breaks down the PrepWise system into major functional processes.
 - Identify strengths and weaknesses
 - Generate recommendations
 - Create performance analytics
-- Compare interview results
 - Track improvement trends
 
 ---
@@ -1078,34 +1077,20 @@ Level 1 DFD breaks down the PrepWise system into major functional processes.
      │◄───────────────────────────┤ Complete Result
      │
      │ Analytics Request
-     ├────────────────────►┌──────▼──────────────┐
-     │                     │  5.13               │
-     │                     │  Calculate          │
-     │                     │  Performance        │
-     │                     │  Analytics          │
-     │                     └──────┬──────────────┘
-     │                            │
-     │                            │ Historical Data
-     │                            ▼
-     │                     ┌────────────────┐
-     │                     │  D5: Results   │
-     │                     └──────┬─────────┘
-     │                            │
-     │◄───────────────────────────┤ Analytics Report
-     │
-     │ Comparison Request
-     └────────────────────►┌─────────────────────┐
-                           │  5.14               │
-                           │  Compare Results    │
+     └────────────────────►┌──────▼──────────────┐
+                           │  5.13               │
+                           │  Calculate          │
+                           │  Performance        │
+                           │  Analytics          │
                            └──────┬──────────────┘
                                   │
-                                  │ Two Result Records
+                                  │ Historical Data
                                   ▼
                            ┌────────────────┐
                            │  D5: Results   │
                            └──────┬─────────┘
                                   │
-                                  │ Comparison Report
+                                  │ Analytics Report
                                   ▼
                            ┌──────────┐
                            │   User   │
@@ -1269,20 +1254,6 @@ Level 1 DFD breaks down the PrepWise system into major functional processes.
   4. Generate grade distribution
   5. Identify insights
 - Output: Analytics report
-- Data Store: D5 (read)
-
-**5.14 Compare Results**
-- Input: Two result IDs
-- Process:
-  1. Retrieve both results
-  2. Compare overall scores
-  3. Compare category scores
-  4. Calculate differences
-  5. Identify improvements/declines
-  6. Compare facial analysis
-  7. Calculate time difference
-  8. Generate comparison insights
-- Output: Comparison report
 - Data Store: D5 (read)
 
 ---
