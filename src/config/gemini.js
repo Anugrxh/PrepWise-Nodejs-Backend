@@ -120,6 +120,57 @@ Do not include any other text, explanations, or formatting.`;
   }
 }
 
+// Pre-validation to catch obviously bad answers
+function preValidateAnswer(answerText, questionText) {
+  const answer = answerText.trim().toLowerCase();
+  const question = questionText.toLowerCase();
+  
+  // Check for extremely short answers
+  if (answer.length < 10) {
+    return {
+      isValid: false,
+      reason: "Answer too short",
+      score: 5
+    };
+  }
+  
+  // Check for gibberish patterns
+  const gibberishPatterns = [
+    /^[a-z]{1,3}(\s[a-z]{1,3}){5,}$/,  // Random short words
+    /(.)\1{4,}/,                        // Repeated characters (aaaaa)
+    /^[^a-zA-Z]*$/,                     // No letters at all
+    /^(test|testing|hello|hi|ok|yes|no|idk|dunno)\s*$/,  // Common non-answers
+  ];
+  
+  for (const pattern of gibberishPatterns) {
+    if (pattern.test(answer)) {
+      return {
+        isValid: false,
+        reason: "Answer appears to be gibberish or non-meaningful",
+        score: 8
+      };
+    }
+  }
+  
+  // Check if answer has any relation to question keywords
+  const questionWords = question.split(' ').filter(word => word.length > 3);
+  const answerWords = answer.split(' ');
+  const commonWords = questionWords.filter(qWord => 
+    answerWords.some(aWord => aWord.includes(qWord) || qWord.includes(aWord))
+  );
+  
+  // If no common words and answer is short, likely irrelevant
+  if (commonWords.length === 0 && answer.length < 50) {
+    return {
+      isValid: false,
+      reason: "Answer appears unrelated to the question",
+      score: 12
+    };
+  }
+  
+  return { isValid: true };
+}
+
 // Evaluate a single answer
 export async function evaluateAnswer({
   questionText,
@@ -128,7 +179,24 @@ export async function evaluateAnswer({
   techStack,
   experienceLevel,
 }) {
-  const prompt = `Evaluate this interview answer for a ${experienceLevel} level candidate.
+  // Pre-validate the answer
+  const preValidation = preValidateAnswer(answerText, questionText);
+  if (!preValidation.isValid) {
+    return {
+      relevance: preValidation.score,
+      completeness: Math.max(0, preValidation.score - 5),
+      technicalAccuracy: Math.max(0, preValidation.score - 8),
+      communication: Math.max(0, preValidation.score + 5),
+      overallScore: preValidation.score,
+      feedback: `Poor answer quality: ${preValidation.reason}. Please provide a meaningful, relevant response that demonstrates your understanding of the topic.`,
+      suggestions: [
+        "Provide a more detailed and relevant answer",
+        "Ensure your response directly addresses the question",
+        "Include specific technical details and examples"
+      ],
+    };
+  }
+  const prompt = `You are a strict technical interviewer evaluating this answer for a ${experienceLevel} level candidate.
 
 Question: ${questionText}
 Expected Answer: ${expectedAnswer || "Not specified"}
@@ -137,28 +205,62 @@ Technology Context: ${
     Array.isArray(techStack) ? techStack.join(", ") : techStack
   }
 
-Evaluate the answer on these criteria (score 0-100 each):
-1. Relevance - How well does the answer address the question?
-2. Completeness - How complete and thorough is the answer?
-3. Technical Accuracy - How technically accurate is the answer?
-4. Communication - How well is the answer communicated?
+STRICT EVALUATION CRITERIA (score 0-100 each):
 
-Provide constructive feedback and suggestions for improvement.
+1. Relevance (0-100):
+   - 0-20: Completely irrelevant, gibberish, or no attempt to answer
+   - 21-40: Barely addresses the question, mostly off-topic
+   - 41-60: Partially relevant but missing key aspects
+   - 61-80: Good relevance with minor gaps
+   - 81-100: Perfectly addresses the question
+
+2. Completeness (0-100):
+   - 0-20: No meaningful content or extremely incomplete
+   - 21-40: Very basic, missing most important details
+   - 41-60: Covers some aspects but lacks depth
+   - 61-80: Good coverage with minor omissions
+   - 81-100: Comprehensive and thorough
+
+3. Technical Accuracy (0-100):
+   - 0-20: Completely wrong or nonsensical technical information
+   - 21-40: Major technical errors or misconceptions
+   - 41-60: Some correct information but with notable errors
+   - 61-80: Mostly accurate with minor technical issues
+   - 81-100: Technically sound and accurate
+
+4. Communication (0-100):
+   - 0-20: Incoherent, gibberish, or impossible to understand
+   - 21-40: Very poor structure and clarity
+   - 41-60: Understandable but poorly organized
+   - 61-80: Clear communication with minor issues
+   - 81-100: Excellent clarity and structure
+
+IMPORTANT RULES:
+- If the answer is gibberish, nonsensical, or completely unrelated: ALL scores must be 0-20
+- If the answer doesn't attempt to address the question: Relevance must be 0-30
+- If there are major technical errors: Technical Accuracy must be below 40
+- Be HARSH on irrelevant or low-quality answers
+- Only give high scores (70+) for genuinely good answers
+
+Calculate overallScore as the average of all four criteria.
 
 Return ONLY a valid JSON object in this exact format:
 {
-  "relevance": 85,
-  "completeness": 78,
-  "technicalAccuracy": 82,
-  "communication": 80,
-  "overallScore": 81,
-  "feedback": "Detailed feedback about the answer quality, strengths, and areas for improvement",
+  "relevance": 15,
+  "completeness": 10,
+  "technicalAccuracy": 5,
+  "communication": 20,
+  "overallScore": 12,
+  "feedback": "Detailed feedback explaining why the answer received low scores",
   "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"]
 }
 
-Be objective and constructive in your evaluation.`;
+Be STRICT and OBJECTIVE. Do not be lenient with poor answers.`;
 
   try {
+    // Log for debugging (remove in production)
+    console.log(`🔍 Evaluating answer (${answerText.length} chars): "${answerText.substring(0, 100)}..."`);
+    
     const result = await geminiModel.generateContent(prompt);
     const response = await result.response;
     const text = response.text().trim();
@@ -186,6 +288,37 @@ Be objective and constructive in your evaluation.`;
         throw new Error(`Missing required field: ${field}`);
       }
     }
+
+    // Validate score ranges and consistency
+    const scores = [
+      evaluation.relevance,
+      evaluation.completeness,
+      evaluation.technicalAccuracy,
+      evaluation.communication
+    ];
+    
+    // Ensure all scores are within 0-100 range
+    for (const score of scores) {
+      if (score < 0 || score > 100 || isNaN(score)) {
+        throw new Error(`Invalid score: ${score}`);
+      }
+    }
+    
+    // Recalculate overall score to ensure consistency
+    const calculatedOverall = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    evaluation.overallScore = calculatedOverall;
+    
+    // Additional validation: if answer is very short, cap the scores
+    if (answerText.trim().length < 20) {
+      evaluation.relevance = Math.min(evaluation.relevance, 40);
+      evaluation.completeness = Math.min(evaluation.completeness, 30);
+      evaluation.technicalAccuracy = Math.min(evaluation.technicalAccuracy, 25);
+      evaluation.communication = Math.min(evaluation.communication, 35);
+      evaluation.overallScore = Math.round((evaluation.relevance + evaluation.completeness + evaluation.technicalAccuracy + evaluation.communication) / 4);
+    }
+
+    // Log final evaluation for debugging
+    console.log(`📊 Final evaluation: Overall=${evaluation.overallScore}%, Relevance=${evaluation.relevance}%, Length=${answerText.length} chars`);
 
     return evaluation;
   } catch (error) {
@@ -342,52 +475,53 @@ function getFallbackQuestions(
   return baseQuestions.slice(0, numberOfQuestions);
 }
 
-// Fallback evaluation for when AI evaluation fails
+// Fallback evaluation for when AI evaluation fails (conservative scoring)
 function getFallbackEvaluation() {
   return {
-    relevance: 70,
-    completeness: 65,
-    technicalAccuracy: 68,
-    communication: 72,
-    overallScore: 69,
+    relevance: 30,
+    completeness: 25,
+    technicalAccuracy: 20,
+    communication: 35,
+    overallScore: 28,
     feedback:
-      "The answer addresses the question but could be more detailed and specific. Consider providing more concrete examples and technical details.",
+      "Unable to properly evaluate this answer due to technical issues. The answer appears to lack sufficient technical depth and clarity. Please provide a more comprehensive and relevant response.",
     suggestions: [
-      "Provide more specific examples",
-      "Include technical details where relevant",
-      "Structure your answer more clearly",
+      "Provide more specific and relevant technical details",
+      "Ensure your answer directly addresses the question asked",
+      "Structure your response more clearly with concrete examples",
     ],
   };
 }
 
-// Fallback final result
+// Fallback final result (conservative scoring when AI fails)
 function getFallbackFinalResult(answeredQuestions, totalQuestions) {
   const completionRate = (answeredQuestions / totalQuestions) * 100;
-  const baseScore = Math.max(50, Math.min(80, completionRate * 0.8));
+  
+  // Much more conservative scoring when AI evaluation fails
+  const baseScore = Math.max(20, Math.min(45, completionRate * 0.4));
 
   return {
     overallScore: Math.round(baseScore),
     categoryScores: {
-      technicalKnowledge: Math.round(baseScore * 0.9),
-      communication: Math.round(baseScore * 1.1),
-      problemSolving: Math.round(baseScore),
-      confidence: Math.round(baseScore * 0.8),
-      facialAnalysis: Math.round(baseScore * 0.7),
+      technicalKnowledge: Math.round(baseScore * 0.8),
+      communication: Math.round(baseScore * 0.9),
+      problemSolving: Math.round(baseScore * 0.7),
+      confidence: Math.round(baseScore * 0.6),
+      facialAnalysis: Math.round(baseScore * 0.5),
     },
     strengths: [
       "Completed the interview process",
-      "Showed engagement with the questions",
-      "Demonstrated basic understanding",
     ],
     weaknesses: [
-      "Could provide more detailed answers",
-      "Technical depth could be improved",
+      "Unable to properly evaluate answer quality due to technical issues",
+      "Answers may lack sufficient technical depth and clarity",
+      "Response quality could not be verified",
     ],
     recommendations: [
-      "Practice explaining technical concepts in detail",
-      "Work on providing specific examples",
-      "Continue learning and practicing",
+      "Retake the interview when technical issues are resolved",
+      "Ensure answers are comprehensive and technically accurate",
+      "Provide more detailed explanations with specific examples",
     ],
-    detailedFeedback: `You completed ${answeredQuestions} out of ${totalQuestions} questions. Your responses show basic understanding, but there's room for improvement in technical depth and detail. Focus on providing more comprehensive answers with specific examples.`,
+    detailedFeedback: `Technical evaluation failed for this interview. You completed ${answeredQuestions} out of ${totalQuestions} questions, but we could not properly assess the quality of your responses. Please retake the interview to get an accurate evaluation of your skills.`,
   };
 }
