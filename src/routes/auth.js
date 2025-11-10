@@ -338,15 +338,233 @@ router.put(
   })
 );
 
-// @desc    Forgot password (placeholder for future implementation)
+// @desc    Request password reset OTP
 // @route   POST /api/auth/forgot-password
 // @access  Public
 router.post(
   "/forgot-password",
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Please provide a valid email address")
+      .normalizeEmail(),
+  ],
+  validate,
   asyncHandler(async (req, res) => {
-    res.status(501).json({
-      success: false,
-      message: "Forgot password functionality not implemented yet",
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await User.findByEmail(email);
+    
+    // Always return success message for security (don't reveal if email exists)
+    if (!user) {
+      return res.json({
+        success: true,
+        message: "If an account exists with this email, an OTP has been sent.",
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Hash OTP before storing
+    const salt = await bcrypt.genSalt(10);
+    const hashedOTP = await bcrypt.hash(otp, salt);
+    
+    // Save OTP and expiry (10 minutes)
+    user.resetPasswordOTP = hashedOTP;
+    user.resetPasswordOTPExpires = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    // Send OTP via email
+    try {
+      const { sendOTPEmail } = await import("../services/emailService.js");
+      await sendOTPEmail(user.email, otp, user.name);
+      
+      res.json({
+        success: true,
+        message: "OTP has been sent to your email address. Valid for 10 minutes.",
+      });
+    } catch (error) {
+      // Clear OTP if email fails
+      user.resetPasswordOTP = undefined;
+      user.resetPasswordOTPExpires = undefined;
+      await user.save();
+      
+      console.error("Email sending error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send OTP email. Please try again later.",
+      });
+    }
+  })
+);
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+router.post(
+  "/verify-otp",
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Please provide a valid email address")
+      .normalizeEmail(),
+    body("otp")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be 6 digits")
+      .isNumeric()
+      .withMessage("OTP must contain only numbers"),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+
+    // Find user with OTP fields
+    const user = await User.findByEmail(email)
+      .select("+resetPasswordOTP +resetPasswordOTPExpires");
+
+    if (!user || !user.resetPasswordOTP || !user.resetPasswordOTPExpires) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP. Please request a new one.",
+      });
+    }
+
+    // Check if OTP is expired
+    if (new Date() > user.resetPasswordOTPExpires) {
+      user.resetPasswordOTP = undefined;
+      user.resetPasswordOTPExpires = undefined;
+      await user.save();
+      
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Verify OTP
+    const isOTPValid = await bcrypt.compare(otp, user.resetPasswordOTP);
+    
+    if (!isOTPValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP. Please check and try again.",
+      });
+    }
+
+    // OTP is valid - return success (don't clear OTP yet, needed for reset)
+    res.json({
+      success: true,
+      message: "OTP verified successfully. You can now reset your password.",
+    });
+  })
+);
+
+// @desc    Reset password with verified OTP
+// @route   POST /api/auth/reset-password
+// @access  Public
+router.post(
+  "/reset-password",
+  [
+    body("email")
+      .isEmail()
+      .withMessage("Please provide a valid email address")
+      .normalizeEmail(),
+    body("otp")
+      .isLength({ min: 6, max: 6 })
+      .withMessage("OTP must be 6 digits")
+      .isNumeric()
+      .withMessage("OTP must contain only numbers"),
+    body("newPassword")
+      .isLength({ min: 6, max: 128 })
+      .withMessage("Password must be between 6 and 128 characters"),
+    body("confirmPassword")
+      .notEmpty()
+      .withMessage("Password confirmation is required")
+      .custom((value, { req }) => {
+        if (value !== req.body.newPassword) {
+          throw new Error("Password confirmation does not match");
+        }
+        return true;
+      }),
+  ],
+  validate,
+  asyncHandler(async (req, res) => {
+    const { email, otp, newPassword, confirmPassword } = req.body;
+
+    // Additional server-side validation
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    // Find user with OTP and password fields
+    const user = await User.findByEmail(email)
+      .select("+resetPasswordOTP +resetPasswordOTPExpires +password");
+
+    if (!user || !user.resetPasswordOTP || !user.resetPasswordOTPExpires) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired OTP. Please request a new one.",
+      });
+    }
+
+    // Check if OTP is expired
+    if (new Date() > user.resetPasswordOTPExpires) {
+      user.resetPasswordOTP = undefined;
+      user.resetPasswordOTPExpires = undefined;
+      await user.save();
+      
+      return res.status(400).json({
+        success: false,
+        message: "OTP has expired. Please request a new one.",
+      });
+    }
+
+    // Verify OTP
+    const isOTPValid = await bcrypt.compare(otp, user.resetPasswordOTP);
+    
+    if (!isOTPValid) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP. Please check and try again.",
+      });
+    }
+
+    // Check if new password is same as old password
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "New password must be different from your current password",
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    user.resetPasswordOTP = undefined;
+    user.resetPasswordOTPExpires = undefined;
+    
+    // Clear all refresh tokens for security
+    user.refreshTokens = [];
+    
+    await user.save();
+
+    // Send confirmation email
+    try {
+      const { sendPasswordResetConfirmation } = await import("../services/emailService.js");
+      await sendPasswordResetConfirmation(user.email, user.name);
+    } catch (error) {
+      console.error("Failed to send confirmation email:", error);
+      // Don't fail the request if confirmation email fails
+    }
+
+    res.json({
+      success: true,
+      message: "Password reset successful. Please login with your new password.",
     });
   })
 );
