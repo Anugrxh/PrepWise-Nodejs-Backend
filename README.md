@@ -107,14 +107,17 @@ npm start
 
 ### Authentication Endpoints
 
-| Method | Endpoint                    | Description          |
-| ------ | --------------------------- | -------------------- |
-| POST   | `/api/auth/register`        | Register new user    |
-| POST   | `/api/auth/login`           | User login           |
-| POST   | `/api/auth/logout`          | User logout          |
-| POST   | `/api/auth/refresh`         | Refresh access token |
-| GET    | `/api/auth/me`              | Get current user     |
-| PUT    | `/api/auth/change-password` | Change password      |
+| Method | Endpoint                    | Description                    |
+| ------ | --------------------------- | ------------------------------ |
+| POST   | `/api/auth/register`        | Register new user              |
+| POST   | `/api/auth/login`           | User login                     |
+| POST   | `/api/auth/logout`          | User logout                    |
+| POST   | `/api/auth/refresh`         | Refresh access token           |
+| GET    | `/api/auth/me`              | Get current user               |
+| PUT    | `/api/auth/change-password` | Change password                |
+| POST   | `/api/auth/forgot-password` | Request password reset OTP     |
+| POST   | `/api/auth/verify-otp`      | Verify OTP                     |
+| POST   | `/api/auth/reset-password`  | Reset password with OTP        |
 
 ### Interview Endpoints
 

@@ -49,10 +49,19 @@ const userSchema = new mongoose.Schema(
         createdAt: {
           type: Date,
           default: Date.now,
-          expires: 2592000, // 30 days (matches JWT refresh token expiration)
+          // REMOVED: expires field - this was causing entire user deletion
+          // TTL should not be used on subdocument fields
         },
       },
     ],
+    resetPasswordOTP: {
+      type: String,
+      select: false,
+    },
+    resetPasswordOTPExpires: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
