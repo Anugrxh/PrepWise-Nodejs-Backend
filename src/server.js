@@ -59,7 +59,7 @@ app.use(morgan("combined"));
 // This ensures that even error responses from the limiter have CORS headers.
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://your-production-frontend.com", // Replace with your actual frontend URL
+  "https://prep-wise-frontend.netlify.app", // Replace with your actual frontend URL
 ];
 
 app.use(
