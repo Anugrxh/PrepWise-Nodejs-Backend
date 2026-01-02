@@ -138,25 +138,28 @@ const startTokenCleanup = () => {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Prepwise Backend running on port ${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  console.log(` Prepwise Backend running on port ${PORT}`);
+  console.log(` Environment: ${process.env.NODE_ENV}`);
+  console.log(` Health check: http://localhost:${PORT}/health`);
 
   // Start token cleanup scheduler
   startTokenCleanup();
-  console.log("🧹 Token cleanup scheduler started");
+  console.log(" Token cleanup scheduler started");
 });
 
 // ✅ **IMPROVED**: A true graceful shutdown
-const gracefulShutdown = () => {
+const gracefulShutdown = async () => {
   console.log("Shutdown signal received. Closing HTTP server...");
-  server.close(() => {
+  server.close(async () => {
     console.log("HTTP server closed.");
     // Close the MongoDB connection
-    mongoose.connection.close(false, () => {
+    try {
+      await mongoose.connection.close();
       console.log("MongoDB connection closed. Exiting process.");
-      process.exit(0);
-    });
+    } catch (error) {
+      console.error("Error closing MongoDB connection:", error);
+    }
+    process.exit(0);
   });
 };
 
