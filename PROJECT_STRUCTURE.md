@@ -31,11 +31,17 @@ PrepWise-Nodejs-Backend/
 │   ├── utils/                   # Utility functions
 │   │   └── helpers.js           # Helper functions
 │   └── server.js                # 🎯 MAIN APPLICATION FILE
+├── node_modules/                # Dependencies (auto-generated)
+├── .dockerignore                # 🐳 Docker ignore rules
 ├── .env                         # Environment variables (DO NOT COMMIT)
 ├── .env.example                 # Environment template
+├── .git/                        # Git repository data
 ├── .gitignore                   # Git ignore rules
+├── docker-compose.yml           # � Multi -container orchestration
+├── Dockerfile                   # 🐳 Container build instructions
 ├── package.json                 # 📦 Dependencies & scripts
 ├── package-lock.json            # Dependency lock file
+├── PROJECT_STRUCTURE.md         # This file
 ├── README.md                    # Project documentation
 └── server.js                    # 🚀 ENTRY POINT (redirects to src/server.js)
 ```
@@ -55,24 +61,58 @@ PrepWise-Nodejs-Backend/
 - **`src/config/database.js`** - Database connection
 - **`src/config/gemini.js`** - AI service config
 
-## 🐳 Docker Considerations
+## 🐳 Docker Configuration
 
-### Files to Include in Docker Image:
+### Docker Files Added:
+- **`Dockerfile`** - Container build instructions for the Node.js app
+- **`docker-compose.yml`** - Multi-container orchestration (app + database)
+- **`.dockerignore`** - Files to exclude from Docker build context
+
+### Docker Architecture:
 ```
-✅ src/
-✅ package.json
-✅ package-lock.json
-✅ server.js
-✅ .env.example (as template)
+┌─────────────────────────────────────────────────────────────┐
+│                    Docker Compose Stack                     │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐    ┌─────────────────┐                │
+│  │   Node.js App   │    │    MongoDB      │                │
+│  │   (Port 5000)   │◄──►│   (Port 27017)  │                │
+│  │                 │    │                 │                │
+│  └─────────────────┘    └─────────────────┘                │
+│           │                                                 │
+│           ▼                                                 │
+│  ┌─────────────────┐                                       │
+│  │ External APIs   │                                       │
+│  │ - Gemini AI     │                                       │
+│  │ - Email SMTP    │                                       │
+│  │ - Facial API    │                                       │
+│  └─────────────────┘                                       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Files to Exclude (.dockerignore):
+## 🚀 CI/CD Pipeline Structure
+
+### Build Stage Files:
 ```
-❌ .env (contains secrets)
-❌ node_modules/
-❌ .git/
-❌ README.md
-❌ PROJECT_STRUCTURE.md
+✅ Dockerfile              # Container build instructions
+✅ docker-compose.yml      # Local development & testing
+✅ package.json           # Dependencies & build scripts
+✅ package-lock.json      # Exact dependency versions
+✅ .dockerignore          # Build optimization
+```
+
+### Application Files:
+```
+✅ src/                   # All source code
+✅ server.js             # Entry point
+✅ .env.example          # Environment template
+```
+
+### CI/CD Exclusions:
+```
+❌ .env                  # Contains secrets (use CI/CD env vars)
+❌ node_modules/         # Rebuilt in container
+❌ .git/                 # Not needed in production
+❌ *.md files            # Documentation only
 ```
 
 ### Port Configuration:
@@ -94,10 +134,36 @@ PrepWise-Nodejs-Backend/
 - `EMAIL_USER` & `EMAIL_PASSWORD`
 - `FACIAL_ANALYSIS_API_URL`
 
-## 🚀 Docker Build Strategy
+## � CIc/CD Pipeline Recommendations
 
-1. **Multi-stage build** recommended
-2. **Node.js Alpine** base image for smaller size
-3. **Non-root user** for security
-4. **Health check** using `/health` endpoint
-5. **Volume mounts** for logs and uploads
+### 1. Build Pipeline:
+```yaml
+# Example GitHub Actions workflow structure
+stages:
+  - lint & test          # Code quality checks
+  - docker build         # Build container image
+  - security scan        # Vulnerability scanning
+  - deploy staging       # Deploy to staging environment
+  - integration tests    # End-to-end testing
+  - deploy production    # Production deployment
+```
+
+### 2. Docker Build Strategy:
+- **Multi-stage build** for optimized image size
+- **Node.js Alpine** base image (smaller footprint)
+- **Non-root user** for security
+- **Health check** using `/health` endpoint
+- **Layer caching** for faster builds
+
+### 3. Deployment Considerations:
+- **Environment variables** managed via CI/CD secrets
+- **Database migrations** handled separately
+- **Rolling deployments** for zero downtime
+- **Container orchestration** (Kubernetes/Docker Swarm)
+- **Load balancing** for high availability
+
+### 4. Monitoring & Logging:
+- **Container logs** centralized collection
+- **Health checks** for service monitoring
+- **Performance metrics** tracking
+- **Error tracking** and alerting
