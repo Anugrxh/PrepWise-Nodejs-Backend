@@ -14,7 +14,7 @@ import {
 
 const router = express.Router();
 
-// Configure multer for file uploads (for facial analysis)
+
 const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
