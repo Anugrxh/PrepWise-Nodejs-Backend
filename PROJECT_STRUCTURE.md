@@ -117,7 +117,7 @@ PrepWise-Nodejs-Backend/
 
 ### Port Configuration:
 - **Default Port:** 5000 (configurable via PORT env var)
-- **Health Check:** `/health` endpoint available
+- **Health Check:** `/api/v1/health` endpoint available
 
 ### External Dependencies:
 - **MongoDB** - Database (can be containerized separately)
@@ -152,7 +152,7 @@ stages:
 - **Multi-stage build** for optimized image size
 - **Node.js Alpine** base image (smaller footprint)
 - **Non-root user** for security
-- **Health check** using `/health` endpoint
+- **Health check** using `/api/v1/health` endpoint
 - **Layer caching** for faster builds
 
 ### 3. Deployment Considerations:
@@ -164,6 +164,6 @@ stages:
 
 ### 4. Monitoring & Logging:
 - **Container logs** centralized collection
-- **Health checks** for service monitoring
+- **Health checks** for service monitoring (e.g., `/api/v1/health`)
 - **Performance metrics** tracking
 - **Error tracking** and alerting

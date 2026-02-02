@@ -107,72 +107,72 @@ npm start
 
 ### Authentication Endpoints
 
-| Method | Endpoint                    | Description                    |
-| ------ | --------------------------- | ------------------------------ |
-| POST   | `/api/auth/register`        | Register new user              |
-| POST   | `/api/auth/login`           | User login                     |
-| POST   | `/api/auth/logout`          | User logout                    |
-| POST   | `/api/auth/refresh`         | Refresh access token           |
-| GET    | `/api/auth/me`              | Get current user               |
-| PUT    | `/api/auth/change-password` | Change password                |
-| POST   | `/api/auth/forgot-password` | Request password reset OTP     |
-| POST   | `/api/auth/verify-otp`      | Verify OTP                     |
-| POST   | `/api/auth/reset-password`  | Reset password with OTP        |
+| Method | Endpoint                       | Description                    |
+| ------ | ------------------------------ | ------------------------------ |
+| POST   | `/api/v1/auth/register`        | Register new user              |
+| POST   | `/api/v1/auth/login`           | User login                     |
+| POST   | `/api/v1/auth/logout`          | User logout                    |
+| POST   | `/api/v1/auth/refresh`         | Refresh access token           |
+| GET    | `/api/v1/auth/me`              | Get current user               |
+| PUT    | `/api/v1/auth/change-password` | Change password                |
+| POST   | `/api/v1/auth/forgot-password` | Request password reset OTP     |
+| POST   | `/api/v1/auth/verify-otp`      | Verify OTP                     |
+| POST   | `/api/v1/auth/reset-password`  | Reset password with OTP        |
 
 ### Interview Endpoints
 
-| Method | Endpoint                         | Description                    |
-| ------ | -------------------------------- | ------------------------------ |
-| POST   | `/api/interviews/generate`       | Generate new interview with AI |
-| GET    | `/api/interviews`                | Get user's interviews          |
-| GET    | `/api/interviews/:id`            | Get single interview           |
-| POST   | `/api/interviews/:id/start`      | Start interview                |
-| POST   | `/api/interviews/:id/complete`   | Complete interview             |
-| DELETE | `/api/interviews/:id`            | Delete interview               |
-| GET    | `/api/interviews/stats/overview` | Get interview statistics       |
+| Method | Endpoint                            | Description                    |
+| ------ | ----------------------------------- | ------------------------------ |
+| POST   | `/api/v1/interviews/generate`       | Generate new interview with AI |
+| GET    | `/api/v1/interviews`                | Get user's interviews          |
+| GET    | `/api/v1/interviews/:id`            | Get single interview           |
+| POST   | `/api/v1/interviews/:id/start`      | Start interview                |
+| POST   | `/api/v1/interviews/:id/complete`   | Complete interview             |
+| DELETE | `/api/v1/interviews/:id`            | Delete interview               |
+| GET    | `/api/v1/interviews/stats/overview` | Get interview statistics       |
 
 ### Answer Endpoints
 
-| Method | Endpoint                              | Description                             |
-| ------ | ------------------------------------- | --------------------------------------- |
-| POST   | `/api/answers`                        | Submit answer with optional facial data |
-| GET    | `/api/answers/interview/:interviewId` | Get answers for interview               |
-| GET    | `/api/answers/:id`                    | Get single answer                       |
-| PUT    | `/api/answers/:id`                    | Update answer                           |
-| DELETE | `/api/answers/:id`                    | Delete answer                           |
-| GET    | `/api/answers/stats/:interviewId`     | Get answer statistics                   |
+| Method | Endpoint                                 | Description                             |
+| ------ | ---------------------------------------- | --------------------------------------- |
+| POST   | `/api/v1/answers`                        | Submit answer with optional facial data |
+| GET    | `/api/v1/answers/interview/:interviewId` | Get answers for interview               |
+| GET    | `/api/v1/answers/:id`                    | Get single answer                       |
+| PUT    | `/api/v1/answers/:id`                    | Update answer                           |
+| DELETE | `/api/v1/answers/:id`                    | Delete answer                           |
+| GET    | `/api/v1/answers/stats/:interviewId`     | Get answer statistics                   |
 
 ### Results Endpoints
 
-| Method | Endpoint                              | Description               |
-| ------ | ------------------------------------- | ------------------------- |
-| POST   | `/api/results/generate/:interviewId`  | Generate final result     |
-| GET    | `/api/results/interview/:interviewId` | Get result for interview  |
-| GET    | `/api/results`                        | Get user's all results    |
-| GET    | `/api/results/:id`                    | Get single result         |
-| DELETE | `/api/results/:id`                    | Delete result             |
-| GET    | `/api/results/analytics/performance`  | Get performance analytics |
-| GET    | `/api/results/compare/:id1/:id2`      | Compare two results       |
+| Method | Endpoint                                 | Description               |
+| ------ | ---------------------------------------- | ------------------------- |
+| POST   | `/api/v1/results/generate/:interviewId`  | Generate final result     |
+| GET    | `/api/v1/results/interview/:interviewId` | Get result for interview  |
+| GET    | `/api/v1/results`                        | Get user's all results    |
+| GET    | `/api/v1/results/:id`                    | Get single result         |
+| DELETE | `/api/v1/results/:id`                    | Delete result             |
+| GET    | `/api/v1/results/analytics/performance`  | Get performance analytics |
+| GET    | `/api/v1/results/compare/:id1/:id2`      | Compare two results       |
 
 ### Facial Analysis Endpoints
 
-| Method | Endpoint                                           | Description                        |
-| ------ | -------------------------------------------------- | ---------------------------------- |
-| GET    | `/api/facial-analysis/interview/:interviewId`      | Get facial analysis for interview  |
-| GET    | `/api/facial-analysis/user/summary`               | Get user's facial analysis summary |
-| GET    | `/api/facial-analysis/compare/:id1/:id2`           | Compare facial analysis results    |
+| Method | Endpoint                                              | Description                        |
+| ------ | ----------------------------------------------------- | ---------------------------------- |
+| GET    | `/api/v1/facial-analysis/interview/:interviewId`      | Get facial analysis for interview  |
+| GET    | `/api/v1/facial-analysis/user/summary`                | Get user's facial analysis summary |
+| GET    | `/api/v1/facial-analysis/compare/:id1/:id2`           | Compare facial analysis results    |
 
 ### User Endpoints
 
-| Method | Endpoint                   | Description           |
-| ------ | -------------------------- | --------------------- |
-| GET    | `/api/users/profile`       | Get user profile      |
-| PUT    | `/api/users/profile`       | Update profile        |
-| PUT    | `/api/users/profile-image` | Update profile image  |
-| GET    | `/api/users/stats`         | Get user statistics   |
-| GET    | `/api/users/interviews`    | Get user's interviews |
-| GET    | `/api/users/results`       | Get user's results    |
-| DELETE | `/api/users/account`       | Delete user account   |
+| Method | Endpoint                      | Description           |
+| ------ | ----------------------------- | --------------------- |
+| GET    | `/api/v1/users/profile`       | Get user profile      |
+| PUT    | `/api/v1/users/profile`       | Update profile        |
+| PUT    | `/api/v1/users/profile-image` | Update profile image  |
+| GET    | `/api/v1/users/stats`         | Get user statistics   |
+| GET    | `/api/v1/users/interviews`    | Get user's interviews |
+| GET    | `/api/v1/users/results`       | Get user's results    |
+| DELETE | `/api/v1/users/account`       | Delete user account   |
 
 ## 🗄️ Database Schema
 
@@ -371,7 +371,7 @@ The overall score is calculated based on:
 const formData = new FormData();
 formData.append("profileImage", fileInput.files[0]);
 
-fetch("/api/users/profile-image", {
+fetch("/api/v1/users/profile-image", {
   method: "PUT",
   headers: {
     Authorization: `Bearer ${token}`,
@@ -380,7 +380,7 @@ fetch("/api/users/profile-image", {
 });
 
 // Set URL
-fetch("/api/users/profile-image", {
+fetch("/api/v1/users/profile-image", {
   method: "PUT",
   headers: {
     Authorization: `Bearer ${token}`,
@@ -392,7 +392,7 @@ fetch("/api/users/profile-image", {
 });
 
 // Remove image
-fetch("/api/users/profile-image", {
+fetch("/api/v1/users/profile-image", {
   method: "PUT",
   headers: {
     Authorization: `Bearer ${token}`,
@@ -444,7 +444,7 @@ if (profileImage) {
 
 #### Register User
 
-**POST** `/api/auth/register`
+**POST** `/api/v1/auth/register`
 
 **Request Body:**
 
@@ -477,7 +477,7 @@ if (profileImage) {
 
 #### Login User
 
-**POST** `/api/auth/login`
+**POST** `/api/v1/auth/login`
 
 **Request Body:**
 
@@ -509,7 +509,7 @@ if (profileImage) {
 
 #### Get Current User
 
-**GET** `/api/auth/me`
+**GET** `/api/v1/auth/me`
 
 **Headers:**
 
@@ -538,7 +538,7 @@ Authorization: Bearer <token>
 
 #### Change Password
 
-**PUT** `/api/auth/change-password`
+**PUT** `/api/v1/auth/change-password`
 
 **Headers:**
 
@@ -569,7 +569,7 @@ Authorization: Bearer <token>
 
 #### Get User Profile
 
-**GET** `/api/users/profile`
+**GET** `/api/v1/users/profile`
 
 **Headers:**
 
@@ -603,7 +603,7 @@ Authorization: Bearer <token>
 
 #### Update User Profile
 
-**PUT** `/api/users/profile`
+**PUT** `/api/v1/users/profile`
 
 **Headers:**
 
@@ -642,7 +642,7 @@ Authorization: Bearer <token>
 
 #### Update Profile Image
 
-**PUT** `/api/users/profile-image`
+**PUT** `/api/v1/users/profile-image`
 
 **Headers:**
 
@@ -732,7 +732,7 @@ profileImage: <image_file> (max 5MB, JPEG/PNG/JPG only)
 
 #### Get User Statistics
 
-**GET** `/api/users/stats`
+**GET** `/api/v1/users/stats`
 
 **Headers:**
 
@@ -793,7 +793,7 @@ Authorization: Bearer <token>
 
 #### Generate Interview
 
-**POST** `/api/interviews/generate`
+**POST** `/api/v1/interviews/generate`
 
 **Headers:**
 

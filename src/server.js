@@ -14,12 +14,7 @@ import User from "./models/User.js";
 import mongoose from "mongoose";
 
 // Import routes
-import authRoutes from "./routes/auth.js";
-import interviewRoutes from "./routes/interviews.js";
-import answerRoutes from "./routes/answers.js";
-import resultRoutes from "./routes/results.js";
-import userRoutes from "./routes/users.js";
-import facialAnalysisRoutes from "./routes/facialAnalysis.js";
+import v1Routes from "./routes/v1/index.js";
 
 // Import middleware
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -89,7 +84,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser(process.env.COOKIE_SECRET));
 
 // Health check endpoint
-app.get("/health", (req, res) => {
+app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
     success: true,
     status: "OK",
@@ -101,12 +96,7 @@ app.get("/health", (req, res) => {
 });
 
 // API Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/interviews", interviewRoutes);
-app.use("/api/answers", answerRoutes);
-app.use("/api/results", resultRoutes);
-app.use("/api/facial-analysis", facialAnalysisRoutes);
+app.use("/api/v1", v1Routes);
 
 // Error handling middleware
 app.use(notFound);
@@ -140,7 +130,7 @@ const startTokenCleanup = () => {
 const server = app.listen(PORT, () => {
   console.log(` Prepwise Backend running on port ${PORT}`);
   console.log(` Environment: ${process.env.NODE_ENV}`);
-  console.log(` Health check: http://localhost:${PORT}/health`);
+  console.log(` Health check: http://localhost:${PORT}/api/v1/health`);
 
   // Start token cleanup scheduler
   startTokenCleanup();
